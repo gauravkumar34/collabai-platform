@@ -11,7 +11,9 @@ describe('ChatServiceController', () => {
       providers: [ChatServiceService],
     }).compile();
 
-    chatServiceController = app.get<ChatServiceController>(ChatServiceController);
+    chatServiceController = app.get<ChatServiceController>(
+      ChatServiceController,
+    );
   });
 
   describe('root', () => {

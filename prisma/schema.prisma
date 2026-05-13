@@ -13,9 +13,44 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  id           String         @id @default(uuid())
+  email        String         @unique
+  password     String
+  name         String?
+  role         Role           @default(USER)
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+  @@index([email])
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  tokenHash   String   @unique           // store SHA-256 hash, not raw token
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  family      String                      // group rotated tokens; reuse of any in family = revoke all
+  expiresAt   DateTime
+  revokedAt   DateTime?                   // null = active
+  replacedBy  String?                     // id of the token that replaced this one (rotation chain)
+
+  createdAt   DateTime @default(now())
+  userAgent   String?
+  ipAddress   String?
+
+  @@map("refresh_tokens")
+  @@index([userId])
+  @@index([family])
+  @@index([tokenHash])
 }

@@ -11,7 +11,9 @@ describe('WorkspaceServiceController', () => {
       providers: [WorkspaceServiceService],
     }).compile();
 
-    workspaceServiceController = app.get<WorkspaceServiceController>(WorkspaceServiceController);
+    workspaceServiceController = app.get<WorkspaceServiceController>(
+      WorkspaceServiceController,
+    );
   });
 
   describe('root', () => {
