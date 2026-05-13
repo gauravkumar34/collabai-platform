@@ -1,98 +1,262 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# CollabAI Platform
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+An AI-powered real-time collaboration platform built as a NestJS monorepo of microservices. CollabAI provides workspace management, real-time chat, AI-assisted features, and a secure JWT-based authentication system.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Architecture
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
+```
+collabai-platform/
+├── apps/
+│   ├── api-gateway/          # Public-facing API (port 3000)
+│   ├── auth-service/         # Authentication & authorization (port 3001)
+│   ├── ai-service/           # AI features
+│   ├── chat-service/         # Real-time chat
+│   ├── notification-service/ # Notifications
+│   └── workspace-service/    # Workspace management
+├── libs/
+│   ├── auth/                 # Shared JWT guards, decorators, RolesGuard
+│   ├── common/               # AllExceptionsFilter, shared utilities
+│   └── database/             # Prisma service
+└── prisma/                   # Schema & migrations
 ```
 
-## Compile and run the project
+### Services
+
+| Service              | Port | Description                                      |
+|----------------------|------|--------------------------------------------------|
+| API Gateway          | 3000 | Single entry point; routes to downstream services |
+| Auth Service         | 3001 | Register, login, token refresh, logout, `/me`    |
+| AI Service           | —    | AI-assisted collaboration features               |
+| Chat Service         | —    | Real-time messaging                              |
+| Notification Service | —    | Push / in-app notifications                      |
+| Workspace Service    | —    | Workspace and member management                  |
+
+### Shared Libraries
+
+| Library       | Path alias    | Exports                                          |
+|---------------|---------------|--------------------------------------------------|
+| `auth`        | `@app/auth`   | `CurrentUser` decorator, `Roles` decorator, `RolesGuard`, `AuthModule` |
+| `database`    | `@app/database` | `DatabaseModule`, `PrismaService`              |
+| `common`      | `@app/common` | `AllExceptionsFilter`                            |
+
+---
+
+## Tech Stack
+
+- **Runtime** — Node.js, NestJS 11, TypeScript 5.9
+- **Database** — PostgreSQL 16 via Prisma ORM
+- **Cache / Pub-Sub** — Redis 7
+- **Message Broker** — Apache Kafka (Confluent)
+- **Auth** — JWT access + refresh tokens (rotation + reuse detection), Passport.js, bcrypt
+- **API Docs** — Swagger / OpenAPI (`/docs` on each service)
+- **Security** — Helmet, CORS, compression, `ValidationPipe` (whitelist mode)
+
+---
+
+## Prerequisites
+
+- Node.js ≥ 20
+- Docker & Docker Compose
+- npm ≥ 10
+
+---
+
+## Getting Started
+
+### 1. Install dependencies
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
+### 2. Start infrastructure
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+docker-compose up -d
 ```
 
-## Deployment
+This starts:
+- PostgreSQL on `localhost:5432`
+- Redis on `localhost:6379`
+- Kafka on `localhost:9092`
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### 3. Configure environment
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Create a `.env` file in the project root:
+
+```env
+# Database
+DATABASE_URL="postgresql://postgres:root@localhost:5432/collabai"
+
+# Auth Service
+AUTH_SERVICE_PORT=3001
+JWT_ACCESS_SECRET=your-access-secret-change-me
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_SECRET=your-refresh-secret-change-me
+JWT_REFRESH_EXPIRES_IN=7d
+BCRYPT_ROUNDS=12
+
+# API Gateway
+API_GATEWAY_PORT=3000
+```
+
+### 4. Run database migrations
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npx prisma migrate deploy
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Generate the Prisma client (already runs on `npm install` via postinstall, but if needed):
 
-## Resources
+```bash
+npx prisma generate
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+### 5. Start services
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+# Auth Service
+npm run start:dev auth-service
 
-## Support
+# API Gateway
+npm run start:dev api-gateway
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+---
 
-## Stay in touch
+## Auth Service — API Reference
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Base URL: `http://localhost:3001/api/v1`  
+Swagger docs: `http://localhost:3001/docs`
+
+### Endpoints
+
+| Method | Path              | Auth     | Description                        |
+|--------|-------------------|----------|------------------------------------|
+| POST   | `/auth/register`  | None     | Create a new account               |
+| POST   | `/auth/login`     | None     | Login and receive tokens           |
+| POST   | `/auth/refresh`   | Refresh  | Rotate refresh token               |
+| POST   | `/auth/logout`    | None     | Revoke refresh token family        |
+| GET    | `/auth/me`        | Bearer   | Return the authenticated user      |
+
+### Register
+
+```json
+POST /auth/register
+{
+  "email": "jane@collabai.dev",
+  "password": "Str0ngP@ss!",
+  "name": "Jane Doe"
+}
+```
+
+### Login
+
+```json
+POST /auth/login
+{
+  "email": "jane@collabai.dev",
+  "password": "Str0ngP@ss!"
+}
+```
+
+Response:
+```json
+{
+  "accessToken": "<jwt>",
+  "refreshToken": "<jwt>"
+}
+```
+
+### Refresh
+
+```json
+POST /auth/refresh
+{
+  "refreshToken": "<jwt>"
+}
+```
+
+The old refresh token is revoked and a new pair is issued. Reuse of a revoked token revokes the entire token family (refresh token rotation).
+
+---
+
+## Auth Design
+
+- **Access token** — short-lived (default 15 min), stateless JWT verified by signature
+- **Refresh token** — long-lived (default 7 days), SHA-256 hash stored in `refresh_tokens` table
+- **Token rotation** — each `/refresh` call revokes the presented token and issues a new family member
+- **Reuse detection** — presenting an already-revoked refresh token immediately revokes all tokens in that family
+- **Role-based access** — `RolesGuard` + `@Roles()` decorator, user roles: `USER | ADMIN`
+
+---
+
+## Database Schema
+
+```prisma
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String         // bcrypt hash
+  name          String?
+  role          Role           @default(USER)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  tokenHash  String    @unique   // SHA-256 of the raw token
+  userId     String
+  family     String              // token rotation family
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  replacedBy String?             // audit chain
+  userAgent  String?
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
+}
+```
+
+---
+
+## Development Scripts
+
+```bash
+# Build all
+npm run build
+
+# Format
+npm run format
+
+# Lint (with auto-fix)
+npm run lint
+
+# Unit tests
+npm run test
+
+# Test coverage
+npm run test:cov
+
+# Prisma Studio
+npx prisma studio
+```
+
+---
+
+## Project Status
+
+| Day | Feature                                                           |
+|-----|-------------------------------------------------------------------|
+| 1   | Monorepo setup, Docker infra, Prisma, shared libs, Swagger        |
+| 2   | Auth service — register, login, JWT rotation, reuse detection     |
+
+---
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Private — all rights reserved.
