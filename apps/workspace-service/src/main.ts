@@ -3,6 +3,7 @@ import { WorkspaceServiceModule } from './workspace-service.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(WorkspaceServiceModule);
-  await app.listen(process.env.port ?? 3000);
+  app.setGlobalPrefix('api/v1');
+  await app.listen(process.env.WORKSPACE_SERVICE_PORT ?? 3002);
 }
 void bootstrap();
