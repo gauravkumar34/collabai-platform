@@ -17,6 +17,8 @@ import {
   JwtPayload,
   RefreshJwtPayload,
 } from './interfaces/jwt-payload.interface';
+import { KafkaProducerService } from '@app/common/kafka';
+import { KAFKA_TOPICS } from '@app/common/events';
 
 @Injectable()
 export class AuthService {
@@ -27,6 +29,7 @@ export class AuthService {
     private readonly refreshRepo: RefreshTokenRepository,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly producer: KafkaProducerService, // ← add
   ) {}
 
   async register(dto: RegisterDto) {
@@ -43,7 +46,18 @@ export class AuthService {
       password: hash,
       name: dto.name,
     });
-
+    // 🔥 Publish event
+    await this.producer.publish(
+      KAFKA_TOPICS.USER_CREATED,
+      {
+        userId: user.id,
+        email: user.email,
+        name: user.name ?? undefined,
+        createdAt: user.createdAt.toISOString(),
+      },
+      'user.created',
+      { key: user.id }, // partition by user → ordering per user
+    );
     return this.issueTokens(user.id, user.email, user.role);
   }
 
